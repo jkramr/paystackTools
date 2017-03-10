@@ -25,7 +25,7 @@ public class User {
     @NonNull
     private String paystackId;
     @NonNull
-    private double totalRidesVolume;
+    private double totalVolume;
     @NonNull
     private double totalSuccessfulVolume;
     @NonNull
@@ -35,7 +35,7 @@ public class User {
     @NonNull
     private String resolution;
     @NonNull
-    private LocalDateTime lastRideTime;
+    private LocalDateTime lastPaymentTime;
 
     @Lob
     @Column(name="payments", length=999999)

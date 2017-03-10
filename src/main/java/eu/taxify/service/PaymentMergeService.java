@@ -78,7 +78,7 @@ public class PaymentMergeService {
                 .mapToDouble(PaystackPaymentRow::getAmount)
                 .sum();
 
-        double totalRidesVolume = paymentRepository
+        double totalVolume = paymentRepository
                 .findByUserId(id)
                 .stream()
                 .filter(sourcePaymentRow -> "NULL".equals(sourcePaymentRow.getPreviousRowId()))
@@ -88,8 +88,8 @@ public class PaymentMergeService {
                                     .stream()
                                     .filter(sourcePaymentRow -> "capture".equals(sourcePaymentRow.getType()))
                                     .map(sourcePaymentRow -> {
-                                        if (sourcePaymentRow.getCreated().isAfter(metaData.getLastRideTime())) {
-                                            metaData.setLastRideTime(sourcePaymentRow.getCreated());
+                                        if (sourcePaymentRow.getCreated().isAfter(metaData.getLastPaymentTime())) {
+                                            metaData.setLastPaymentTime(sourcePaymentRow.getCreated());
                                         }
                                         srcPayments.append(sourcePaymentRow.toString()).append(", ");
                                         return sourcePaymentRow;
@@ -117,15 +117,15 @@ public class PaymentMergeService {
                 .mapToDouble(SourcePaymentRow::getAmount)
                 .sum();
 
-        double balance = actuallyCharged - totalRidesVolume;
+        double balance = actuallyCharged - totalVolume;
 
         System.out.println("id: " + id);
         System.out.println("email: " + email);
-        System.out.println("totalRidesVolume: " + totalRidesVolume);
+        System.out.println("totalVolume: " + totalVolume);
         System.out.println("totalSuccessfulVolume: " + totalSuccessfulVolume);
         System.out.println("actuallyCharged: " + actuallyCharged);
         System.out.println("balance: " + balance);
-        System.out.println("lastRideTime: " + metaData.getLastRideTime());
+        System.out.println("lastPaymentTime: " + metaData.getLastPaymentTime());
 
         String resolution = balance == 0
                 ? "ok"
@@ -139,12 +139,12 @@ public class PaymentMergeService {
                 id,
                 email,
                 metaData.getPaystackUserId(),
-                totalRidesVolume,
+                totalVolume,
                 totalSuccessfulVolume,
                 actuallyCharged,
                 balance,
                 resolution,
-                metaData.getLastRideTime(),
+                metaData.getLastPaymentTime(),
                 trimAndFinalize(srcPayments),
                 trimAndFinalize(paystackPayments)
         );
@@ -161,7 +161,7 @@ public class PaymentMergeService {
     @Data
     private class MetaData {
         @NonNull
-        private LocalDateTime lastRideTime;
+        private LocalDateTime lastPaymentTime;
         public String paystackUserId;
     }
 }
