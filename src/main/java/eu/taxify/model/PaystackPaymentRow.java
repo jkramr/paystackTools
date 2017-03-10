@@ -31,7 +31,7 @@ public class PaystackPaymentRow {
     public String toString() {
         return "{" +
                 "reference: " + reference + "," +
-                "email: " + email +
+                "email: " + email + "," +
                 "amount: " + amount + "," +
                 "status: " + status + "," +
                 "transactionDate: " + transactionDate +

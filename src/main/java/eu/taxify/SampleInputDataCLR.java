@@ -1,8 +1,8 @@
 package eu.taxify;
 
-import eu.taxify.model.AdminPaymentRow;
+import eu.taxify.model.SourcePaymentRow;
 import eu.taxify.model.PaystackPaymentRow;
-import eu.taxify.repository.AdminPaymentRepository;
+import eu.taxify.repository.PaymentRepository;
 import eu.taxify.repository.PaystackPaymentRepository;
 import eu.taxify.service.PaymentMergeService;
 import eu.taxify.util.SimpleFileReader;
@@ -22,46 +22,44 @@ import java.util.Arrays;
 @Component
 class SampleInputDataCLR implements CommandLineRunner {
 
-    @Value("${adminPaymentsFilePath:null}")
-    private String adminPaymentsFilePath;
+    @Value("${srcPaymentsFilePath:null}")
+    private String srcPaymentsFilePath;
 
-    @Value("${adminPaymentsFileName:payment_admin.csv}")
-    private String adminPaymentsFileName;
+    @Value("${srcPaymentsFileName:payment_src.csv}")
+    private String srcPaymentsFileName;
 
     @Value("${paystackPaymentsFilePath:null}")
     private String paystackPaymentsFilePath;
 
-    @Value("${paystackPaymentsFileName:null}")
+    @Value("${paystackPaymentsFileName:payment_paystack.csv}")
     private String paystackPaymentsFileName;
 
-    private AdminPaymentRepository adminPaymentRepository;
+    private PaymentRepository paymentRepository;
     private PaystackPaymentRepository paystackPaymentRepository;
     private PaymentMergeService paymentMergeService;
 
     @Autowired
     SampleInputDataCLR(
-            AdminPaymentRepository adminPaymentRepository,
+            PaymentRepository paymentRepository,
             PaystackPaymentRepository paystackPaymentRepository,
             PaymentMergeService paymentMergeService
     ) {
-        this.adminPaymentRepository = adminPaymentRepository;
+        this.paymentRepository = paymentRepository;
         this.paystackPaymentRepository = paystackPaymentRepository;
         this.paymentMergeService = paymentMergeService;
     }
 
     @Override
     public void run(String... args) throws Exception {
-        SimpleFileReader adminFileReader = readFile(adminPaymentsFilePath, adminPaymentsFileName);
+        SimpleFileReader srcFileReader = readFile(srcPaymentsFilePath, srcPaymentsFileName);
 
-        Arrays.stream(adminFileReader.readFile()
+        Arrays.stream(srcFileReader.readFile()
                 .split("\n"))
                 .forEach(row -> {
                     String[] fields = row.split(",");
-                    adminPaymentRepository.save(new AdminPaymentRow(
+                    paymentRepository.save(new SourcePaymentRow(
                             fields[0], // id
                             fields[1], // type
-                            fields[2], // token
-                            fields[3], // token_data
                             LocalDateTime.parse(fields[4], DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), // created: 2017-02-22 15:02:18
                             Double.valueOf(fields[5]), // amount
                             fields[6], // payment_id
@@ -69,7 +67,7 @@ class SampleInputDataCLR implements CommandLineRunner {
                             fields[8], // payment_method_id
                             fields[9], // payment_method_type
                             fields[10], // state
-                            fields[11], // generated_email
+                            fields[11], // email
                             Integer.valueOf(fields[12]), // is_auto_retry
                             fields[13], // previous_row_id
                             fields[14]  // paystack_user_id

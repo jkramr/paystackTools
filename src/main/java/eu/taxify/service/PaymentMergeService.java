@@ -1,9 +1,9 @@
 package eu.taxify.service;
 
-import eu.taxify.model.AdminPaymentRow;
+import eu.taxify.model.SourcePaymentRow;
 import eu.taxify.model.PaystackPaymentRow;
 import eu.taxify.model.User;
-import eu.taxify.repository.AdminPaymentRepository;
+import eu.taxify.repository.PaymentRepository;
 import eu.taxify.repository.PaystackPaymentRepository;
 import eu.taxify.repository.UserRepository;
 import lombok.Data;
@@ -23,17 +23,17 @@ public class PaymentMergeService {
     private Integer fraudLevel;
 
 
-    private AdminPaymentRepository adminPaymentRepository;
+    private PaymentRepository paymentRepository;
     private PaystackPaymentRepository paystackPaymentRepository;
     private UserRepository userRepository;
 
     @Autowired
     public PaymentMergeService(
-            AdminPaymentRepository adminPaymentRepository,
+            PaymentRepository paymentRepository,
             PaystackPaymentRepository paystackPaymentRepository,
             UserRepository userRepository
     ) {
-        this.adminPaymentRepository = adminPaymentRepository;
+        this.paymentRepository = paymentRepository;
         this.paystackPaymentRepository = paystackPaymentRepository;
         this.userRepository = userRepository;
     }
@@ -43,7 +43,7 @@ public class PaymentMergeService {
         HashMap<String, String> users = new HashMap<>();
 //        HashMap<String, String>  = new HashMap<>();
 
-        adminPaymentRepository.findAll()
+        paymentRepository.findAll()
                 .forEach((row) -> {
                     String userId = row.getUserId();
 
@@ -51,7 +51,7 @@ public class PaymentMergeService {
                             .orElseGet(() -> {
                                 System.out.println("Processing user: " + userId);
 
-                                return users.put(userId, row.getGeneratedEmail());
+                                return users.put(userId, row.getEmail());
                             });
                 });
 
@@ -62,10 +62,9 @@ public class PaymentMergeService {
 
     private void countExcessivePayments(String id, String email) {
         StringBuilder paystackPayments = new StringBuilder().append("[ ");
-        StringBuilder adminPayments = new StringBuilder().append("[ ");
+        StringBuilder srcPayments = new StringBuilder().append("[ ");
 
-        Ride ride = new Ride(LocalDateTime.parse("1000-01-01 00:00:00", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-
+        MetaData metaData = new MetaData(LocalDateTime.parse("1000-01-01 00:00:00", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
         Double actuallyCharged = paystackPaymentRepository
                 .findByEmail(email)
@@ -79,40 +78,43 @@ public class PaymentMergeService {
                 .mapToDouble(PaystackPaymentRow::getAmount)
                 .sum();
 
-        double totalRidesVolume = adminPaymentRepository
+        double totalRidesVolume = paymentRepository
                 .findByUserId(id)
                 .stream()
-                .filter(adminPaymentRow -> "NULL".equals(adminPaymentRow.getPreviousRowId()))
-                .map(preparedRow -> adminPaymentRepository.findByPreviousRowId(preparedRow.getId())
-                        .stream()
-                        .filter(adminPaymentRow -> "capture".equals(adminPaymentRow.getType()))
-                        .map(adminPaymentRow -> {
-                            if (adminPaymentRow.getCreated().isAfter(ride.getLastRideTime())) {
-                                ride.setLastRideTime(adminPaymentRow.getCreated());
-                            }
-                            adminPayments.append(adminPaymentRow.toString()).append(", ");
-                            return adminPaymentRow;
-                        })
-                        .findFirst()
-                        .orElse(null)
+                .filter(sourcePaymentRow -> "NULL".equals(sourcePaymentRow.getPreviousRowId()))
+                .map(preparedRow -> {
+                            metaData.setPaystackUserId(preparedRow.getPaystackUserId());
+                            return paymentRepository.findByPreviousRowId(preparedRow.getId())
+                                    .stream()
+                                    .filter(sourcePaymentRow -> "capture".equals(sourcePaymentRow.getType()))
+                                    .map(sourcePaymentRow -> {
+                                        if (sourcePaymentRow.getCreated().isAfter(metaData.getLastRideTime())) {
+                                            metaData.setLastRideTime(sourcePaymentRow.getCreated());
+                                        }
+                                        srcPayments.append(sourcePaymentRow.toString()).append(", ");
+                                        return sourcePaymentRow;
+                                    })
+                                    .findFirst()
+                                    .orElse(null);
+                        }
                 )
                 .filter(Objects::nonNull)
-                .mapToDouble(AdminPaymentRow::getAmount)
+                .mapToDouble(SourcePaymentRow::getAmount)
                 .sum();
 
-        double totalSuccessfulVolume = adminPaymentRepository
+        double totalSuccessfulVolume = paymentRepository
                 .findByUserId(id)
                 .stream()
-                .filter(adminPaymentRow -> "NULL".equals(adminPaymentRow.getPreviousRowId()))
-                .map(preparedRow -> adminPaymentRepository.findByPreviousRowId(preparedRow.getId())
+                .filter(sourcePaymentRow -> "NULL".equals(sourcePaymentRow.getPreviousRowId()))
+                .map(preparedRow -> paymentRepository.findByPreviousRowId(preparedRow.getId())
                         .stream()
-                        .filter(adminPaymentRow -> "capture".equals(adminPaymentRow.getType()))
-                        .filter(adminPaymentRow -> "finished".equals(adminPaymentRow.getState()))
+                        .filter(sourcePaymentRow -> "capture".equals(sourcePaymentRow.getType()))
+                        .filter(sourcePaymentRow -> "finished".equals(sourcePaymentRow.getState()))
                         .findFirst()
                         .orElse(null)
                 )
                 .filter(Objects::nonNull)
-                .mapToDouble(AdminPaymentRow::getAmount)
+                .mapToDouble(SourcePaymentRow::getAmount)
                 .sum();
 
         double balance = actuallyCharged - totalRidesVolume;
@@ -123,43 +125,43 @@ public class PaymentMergeService {
         System.out.println("totalSuccessfulVolume: " + totalSuccessfulVolume);
         System.out.println("actuallyCharged: " + actuallyCharged);
         System.out.println("balance: " + balance);
-        System.out.println("lastRideTime: " + ride.getLastRideTime());
+        System.out.println("lastRideTime: " + metaData.getLastRideTime());
 
-        String resolution = actuallyCharged > totalRidesVolume
-                ? "overcharge"
-                : actuallyCharged - totalRidesVolume >= -fraudLevel
-                ? "undercharge"
-                : actuallyCharged - totalRidesVolume >= -fraudLevel
-                ? "fraud"
-                : actuallyCharged == totalRidesVolume
+        String resolution = balance == 0
                 ? "ok"
-                : "miracle";
+                : balance > 0
+                    ? "overcharge"
+                    : balance > -fraudLevel
+                        ? "undercharge"
+                        : "fraud";
 
         User user = new User(
                 id,
                 email,
+                metaData.getPaystackUserId(),
                 totalRidesVolume,
                 totalSuccessfulVolume,
                 actuallyCharged,
                 balance,
                 resolution,
-                ride.getLastRideTime(),
-                trim(adminPayments),
-                trim(paystackPayments)
+                metaData.getLastRideTime(),
+                trimAndFinalize(srcPayments),
+                trimAndFinalize(paystackPayments)
         );
 
         userRepository.save(user);
     }
 
-    private String trim(StringBuilder builder) {
+    private String trimAndFinalize(StringBuilder builder) {
         return builder
                 .delete(builder.length() - 2, builder.length() - 1)
                 .append(" ]").toString();
     }
 
     @Data
-    private class Ride {
+    private class MetaData {
         @NonNull
         private LocalDateTime lastRideTime;
+        public String paystackUserId;
     }
 }

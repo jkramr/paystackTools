@@ -23,6 +23,8 @@ public class User {
     @NonNull
     private String email;
     @NonNull
+    private String paystackId;
+    @NonNull
     private double totalRidesVolume;
     @NonNull
     private double totalSuccessfulVolume;
@@ -36,9 +38,9 @@ public class User {
     private LocalDateTime lastRideTime;
 
     @Lob
-    @Column(name="adminPayments", length=999999)
+    @Column(name="payments", length=999999)
     @NonNull
-    private String adminPayments;
+    private String payments;
 
     @Lob
     @Column(name="paystackPayments", length=999999)

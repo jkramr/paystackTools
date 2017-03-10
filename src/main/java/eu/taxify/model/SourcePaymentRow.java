@@ -13,17 +13,13 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @RequiredArgsConstructor
-public class AdminPaymentRow {
+public class SourcePaymentRow {
 
     @Id
     @NonNull
     private String id;
     @NonNull
     private String type;
-    @NonNull
-    private String token;
-    @NonNull
-    private String tokenData;
     @NonNull
     private LocalDateTime created;
     @NonNull
@@ -39,7 +35,7 @@ public class AdminPaymentRow {
     @NonNull
     private String state;
     @NonNull
-    private String generatedEmail;
+    private String email;
     @NonNull
     private Integer isAutoRetry;
     @NonNull
@@ -58,7 +54,7 @@ public class AdminPaymentRow {
                 ", userId: " + userId +
                 ", paymentMethodId: " + paymentMethodId +
                 ", state: " + state +
-                ", generatedEmail: " + generatedEmail +
+                ", email: " + email +
                 ", isAutoRetry=" + isAutoRetry +
                 ", previousRowId: " + previousRowId +
                 ", paystackUserId: " + paystackUserId +

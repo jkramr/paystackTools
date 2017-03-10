@@ -12,11 +12,11 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     Collection<User> findByResolution(@Param("resolution") String resolution);
 
-    Collection<User> findByBalance(@Param("balance") String balance);
+    Collection<User> findByBalance(@Param("balance") Double balance);
 
-    Collection<User> findByBalanceGreaterThan(@Param("balance") String balance);
+    Collection<User> findByBalanceGreaterThan(@Param("balance") Double balance);
 
-    Collection<User> findByBalanceLessThan(@Param("balance") String balance);
+    Collection<User> findByBalanceLessThan(@Param("balance") Double balance);
 
     Collection<User> findByEmail(@Param("email")String email);
 }
