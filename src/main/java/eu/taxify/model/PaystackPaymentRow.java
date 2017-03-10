@@ -30,10 +30,10 @@ public class PaystackPaymentRow {
     @Override
     public String toString() {
         return "{" +
-                "reference: " + reference + "," +
-                "email: " + email + "," +
-                "amount: " + amount + "," +
-                "status: " + status + "," +
+                "reference: " + reference + ", " +
+                "email: " + email + ", " +
+                "amount: " + amount + ", " +
+                "status: " + status + ", " +
                 "transactionDate: " + transactionDate +
                 "}";
     }
