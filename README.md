@@ -33,9 +33,9 @@ Movie search API reference will be available at `http://localhost:8080/users/sea
 
 - Git clone or download this, unpack
 
-#Launch
+###Launch
 
-# A
+#### A
 
 - Go to the root of the project and copy secret files `payment_src.csv` and `payment_paystack.csv` 
 into `src/main/resources` folder, names of the files should be exactly like this otherwise use path `B`
@@ -44,13 +44,13 @@ into `src/main/resources` folder, names of the files should be exactly like this
 
 `./gradlew bootRun`
 
-# B
+#### B
 
 - Go to the root of the project in terminal and run 
 
 `./gradlew bootRun -DsrcPaymentsFilePath=<path-to-src-file> -DpaystackPaymentsFilePath=<path-to-paystack-file> -DfraudLevel=3000`
 
-# Navigate
+### Navigate
 
 - Open `http://localhost:8080/users/search/findByResolution?resolution=overcharge` to see users with double payments
 
