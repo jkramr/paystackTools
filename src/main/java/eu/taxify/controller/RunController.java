@@ -8,15 +8,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.ArrayList;
 
 @RestController
-public class MergeController {
+public class RunController {
 
   private final PaymentMergeService paymentMergeService;
 
   @Autowired
-  public MergeController(
+  public RunController(
           PaymentMergeService paymentMergeService
   ) {
     this.paymentMergeService = paymentMergeService;
