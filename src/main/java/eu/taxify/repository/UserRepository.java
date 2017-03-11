@@ -12,6 +12,8 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     Collection<User> findByResolution(@Param("resolution") String resolution);
 
+    Collection<User> findByPaystackId(@Param("id") String id);
+
     Collection<User> findByBalance(@Param("balance") Double balance);
 
     Collection<User> findByBalanceGreaterThan(@Param("balance") Double balance);

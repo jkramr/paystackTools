@@ -5,10 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Lob;
+import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
