@@ -15,8 +15,7 @@ import java.util.function.Predicate;
 @Data
 @NoArgsConstructor
 @RequiredArgsConstructor
-public
-class PaystackPayment {
+public class PaystackPayment {
 
   public static final double ADD_CARD_FEE = 0.25;
 
@@ -41,8 +40,7 @@ class PaystackPayment {
   @NonNull
   private LocalDateTime transactionDate;
 
-  public static
-  PaystackPayment parseCSVPayment(String csvString) {
+  public static PaystackPayment parseCSVPayment(String csvString) {
     String[] fields = csvString.split(",");
 
     return new PaystackPayment(
@@ -54,14 +52,17 @@ class PaystackPayment {
             // amount
             fields[3],
             // status
-            LocalDateTime.parse(fields[4], DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+            LocalDateTime.parse(
+                    fields[4],
+                    DateTimeFormatter.ofPattern(
+                            "yyyy-MM-dd HH:mm:ss")
+            )
             // transaction date: 2017-02-22 15:02:18
     );
   }
 
   @Override
-  public
-  String toString() {
+  public String toString() {
     return "{" +
            "reference: " + reference + ", " +
            "email: " + email + ", " +
@@ -69,5 +70,13 @@ class PaystackPayment {
            "status: " + status + ", " +
            "transactionDate: " + transactionDate +
            "}";
+  }
+
+  public String toShortString() {
+    return amount + ": " + status;
+  }
+
+  public static String print(PaystackPayment paystackPayment) {
+    return paystackPayment.getAmount() + ": " + paystackPayment.getStatus();
   }
 }

@@ -9,34 +9,32 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Lob;
-import java.time.LocalDateTime;
 
 @Entity
 @Data
 @NoArgsConstructor
 @RequiredArgsConstructor
-public
-class User {
+public class User {
 
   @Id
   @NonNull
-  private String        id;
+  private String id;
   @NonNull
-  private String        email;
+  private String email;
   @NonNull
-  private String        paystackId;
+  private String paystackId;
   @NonNull
-  private double        totalVolume;
+  private double totalVolume;
   @NonNull
-  private double        totalSuccessfulVolume;
+  private double totalSuccessfulVolume;
   @NonNull
-  private Double        actuallyCharged;
+  private Double actuallyCharged;
   @NonNull
-  private Double        balance;
+  private Double balance;
   @NonNull
-  private String        resolution;
+  private String resolution;
   @NonNull
-  private LocalDateTime lastPaymentTime;
+  private String lastPaymentTime;
 
   @Lob
   @Column(name = "payments", length = 999999)

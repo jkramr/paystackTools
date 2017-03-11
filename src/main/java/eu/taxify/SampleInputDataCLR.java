@@ -17,13 +17,14 @@ class SampleInputDataCLR
         implements CommandLineRunner {
 
   @Value("${srcPaymentsFilePath:null}")
-  private String              srcPaymentsFilePath;
+  private String srcPaymentsFilePath;
   @Value("${srcPaymentsFileName:payment_src.csv}")
-  private String              srcPaymentsFileName;
+  private String srcPaymentsFileName;
   @Value("${paystackPaymentsFilePath:null}")
-  private String              paystackPaymentsFilePath;
+  private String paystackPaymentsFilePath;
   @Value("${paystackPaymentsFileName:payment_paystack.csv}")
-  private String              paystackPaymentsFileName;
+  private String paystackPaymentsFileName;
+
   private PaymentMergeService paymentMergeService;
 
   @Autowired
@@ -34,20 +35,16 @@ class SampleInputDataCLR
   }
 
   @Override
-  public
-  void run(String... args)
+  public void run(String... args)
           throws Exception {
 
     paymentMergeService.init(
             readFile(srcPaymentsFilePath, srcPaymentsFileName),
             readFile(paystackPaymentsFilePath, paystackPaymentsFileName)
     );
-
-    paymentMergeService.run(System.out::println);
   }
 
-  private
-  SimpleFileReader readFile(String path, String fileName) {
+  private SimpleFileReader readFile(String path, String fileName) {
     try {
       return new SimpleFileReader(new FileReader(new File(path)));
     } catch (FileNotFoundException ignored) {
@@ -56,12 +53,10 @@ class SampleInputDataCLR
     return readResource(fileName);
   }
 
-  private
-  SimpleFileReader readResource(String fileName) {
+  private SimpleFileReader readResource(String fileName) {
     return new SimpleFileReader(
-            new InputStreamReader(this
-                                          .getClass()
-                                          .getClassLoader()
-                                          .getResourceAsStream(fileName)));
+            new InputStreamReader(this.getClass()
+                                      .getClassLoader()
+                                      .getResourceAsStream(fileName)));
   }
 }

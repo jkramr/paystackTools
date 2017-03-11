@@ -17,11 +17,13 @@ import java.util.*;
 import java.util.function.Consumer;
 
 @Component
-public
-class PaymentMergeService {
+public class PaymentMergeService {
 
   @Value("${fraudLevel:5000}")
   private Integer fraudLevel;
+
+  @Value("${fullView:true}")
+  private Boolean fullView;
 
   private UserRepository userRepository;
 
@@ -29,89 +31,97 @@ class PaymentMergeService {
   private HashMap<String, UserPaystackPayments> paystackUsers;
 
   @Autowired
-  public
-  PaymentMergeService(
+  public PaymentMergeService(
           UserRepository userRepository
   ) {
     this.userRepository = userRepository;
   }
 
-  public
-  void init(SimpleFileReader srcFileReader, SimpleFileReader paystackFileReader) {
+  public void init(
+          SimpleFileReader srcFileReader,
+          SimpleFileReader paystackFileReader
+  ) {
     users = new HashMap<>();
     paystackUsers = new HashMap<>();
 
-    readFile(srcFileReader, payment -> putPayment(users, paystackUsers, payment));
+    readFile(
+            srcFileReader,
+            payment -> putPayment(users, paystackUsers, payment)
+    );
 
-    readFile(paystackFileReader, payment -> putPaystackPayment(paystackUsers, payment));
+    readFile(
+            paystackFileReader,
+            payment -> putPaystackPayment(paystackUsers, payment)
+    );
   }
 
-  public
-  void run(Consumer<String> out) {
+  public void run(Consumer<String> log) {
     users.forEach((id, userPayments) -> {
-      String               email            = userPayments.getEmail();
+      String   email      = userPayments.getEmail();
+
       UserPaystackPayments paystackPayments = paystackUsers.get(email);
 
-      out.accept("User: {");
-      out.accept("id: " + id + ", \n" +
-                 "email: " + userPayments.getEmail() + ", \n" +
-                 "paystackId: " + userPayments.getPaystackId() + ","
+      User user = resolveUserPayments(
+              id,
+              userPayments,
+              paystackPayments
       );
 
-      String resolution = resolveUserPayments(id, userPayments, paystackPayments, out);
-
-      out.accept("resolution: " + resolution);
-
-      out.accept("}");
+      log.accept(user.toString());
     });
 
-    out.accept("Total users: " + users.size());
+    log.accept("Total users: " + users.size());
   }
 
-  public
-  String resolveUserPayments(
+  private User resolveUserPayments(
           String id,
           UserPayments userPayments,
-          UserPaystackPayments paystackPayments,
-          Consumer<String> out
+          UserPaystackPayments paystackPayments
   ) {
     return Optional.ofNullable(paystackPayments)
                    .map(UserPaystackPayments::getList)
-                   .map(userPaystackPayments -> processUserPurchases(id, userPayments, userPaystackPayments, out))
-                   .orElse("not matched with internal user");
+                   .map(userPaystackPayments -> processUserPurchases(
+                           id,
+                           userPayments,
+                           userPaystackPayments
+                   ))
+                   .orElse(null);
   }
 
-  private
-  String processUserPurchases(
+  private User processUserPurchases(
           String id,
           UserPayments userPayments,
-          Collection<PaystackPayment> userPaystackPayments,
-          Consumer<String> out
+          Collection<PaystackPayment> userPaystackPayments
   ) {
     UserPaymentsData userPaymentsData = new UserPaymentsData();
 
-    out.accept("purchases: [");
+    ArrayList<Double> purchases = new ArrayList<>();
 
     userPayments.getList()
                 .stream()
                 .filter(SourcePayment.UNIQUE_ROOT_PAYMENTS_PER_PURCHASE)
-                .forEach(purchase -> processPurchaseActions(userPaymentsData, userPayments, purchase, out));
-
-    out.accept("],");
-
-    out.accept("paystack_payments: {");
+                .forEach(purchase -> processPurchaseActions(
+                        userPaymentsData,
+                        userPayments,
+                        purchase,
+                        purchases
+                ));
 
     userPaystackPayments
             .stream()
             .filter(PaystackPayment.PURCHASE_PAYSTACK_PAYMENTS)
-            .map(paystackPayment -> processCharge(userPaymentsData, paystackPayment, out))
+            .map(paystackPayment -> processCharge(
+                    userPaymentsData,
+                    paystackPayment
+            ))
             .filter(PaystackPayment.SUCCESSFUL_PAYSTACK_PAYMENTS)
-            .mapToDouble(PaystackPayment::getAmount)
-            .forEach(chargeAmount -> processSuccessfulCharge(userPaymentsData, chargeAmount, out));
+            .forEach(paystackPayment -> processSuccessfulCharge(
+                    userPaymentsData,
+                    paystackPayment
+            ));
 
-    out.accept("},");
-
-    Double balance = userPaymentsData.getActuallyCharged() - userPaymentsData.getTotalVolume();
+    Double balance = userPaymentsData.getActuallyCharged() -
+                     userPaymentsData.getTotalVolume();
 
     String resolution = balance == 0
                         ? "ok"
@@ -121,7 +131,7 @@ class PaymentMergeService {
                             ? "undercharge"
                             : "fraud";
 
-    userRepository.save(new User(
+    User user = new User(
             id,
             userPayments.getEmail(),
             userPayments.getPaystackId(),
@@ -130,91 +140,94 @@ class PaymentMergeService {
             userPaymentsData.getActuallyCharged(),
             balance,
             resolution,
-            userPaymentsData.getLastPaymentTime(),
+            userPaymentsData.getLastPaymentTime().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
             userPaymentsData.stringPayments(),
             userPaymentsData.stringPaystackPayments()
-    ));
+    );
 
-    return resolution;
+    userRepository.save(user);
+
+    return user;
   }
 
-  private
-  void processPurchaseActions(
+  private void processPurchaseActions(
           UserPaymentsData userPaymentsData,
           UserPayments userPayments,
           SourcePayment purchaseRow,
-          Consumer<String> out
+          ArrayList<Double> purchases
   ) {
     Amounts amounts = new Amounts();
 
     userPayments.getList()
                 .stream()
                 // filter children of this purchase
-                .filter(payment -> purchaseRow.getId().equals(payment.getPreviousRowId()))
+                .filter(payment -> purchaseRow.getId()
+                                              .equals(payment.getPreviousRowId()))
                 .filter(SourcePayment.ACTUAL_PAYMENTS)
-                .map(payment -> processAction(userPaymentsData, amounts, payment, out))
+                .map(payment -> processAction(
+                        userPaymentsData,
+                        amounts,
+                        payment,
+                        purchases
+                ))
                 .filter(SourcePayment.SUCCESSFUL_PAYMENTS)
-                .forEach(payment -> processSuccessfulAction(amounts, payment, out));
+                .forEach(payment -> processSuccessfulAction(
+                        amounts,
+                        payment,
+                        purchases
+                ));
 
     userPaymentsData.addToTotal(amounts.purchaseAmount);
     userPaymentsData.addToSuccessfulTotal(amounts.successfulPurchaseAmount);
   }
 
-  private
-  void processSuccessfulAction(
+  private void processSuccessfulAction(
           Amounts amounts,
           SourcePayment payment,
-          Consumer<String> out
+          ArrayList<Double> purchases
   ) {
     if (amounts.successfulPurchaseAmount == 0.0) {
       amounts.successfulPurchaseAmount = payment.getAmount();
     } else {
-      out.accept("______________BROKEN_STATE______________");
+      purchases.add(null);
+      System.err.println("----------BROKEN STATE!----------");
     }
   }
 
-  private
-  SourcePayment processAction(
+  private SourcePayment processAction(
           UserPaymentsData userPaymentsData,
           Amounts amounts,
           SourcePayment sourcePayment,
-          Consumer<String> out
+          ArrayList<Double> purchases
   ) {
-    if (sourcePayment.getCreated().isAfter(userPaymentsData.getLastPaymentTime())) {
+    if (sourcePayment.getCreated()
+                     .isAfter(userPaymentsData.getLastPaymentTime())) {
       userPaymentsData.setLastPaymentTime(sourcePayment.getCreated());
     }
 
     if (amounts.purchaseAmount == 0.0) {
-      out.accept(sourcePayment.getAmount() + ",");
+      purchases.add(sourcePayment.getAmount());
       amounts.purchaseAmount = sourcePayment.getAmount();
     }
 
     return userPaymentsData.addToPayments(sourcePayment);
   }
 
-  private
-  PaystackPayment processCharge(
+  private PaystackPayment processCharge(
           UserPaymentsData userPaymentsData,
-          PaystackPayment paystackPayment,
-          Consumer<String> out
+          PaystackPayment paystackPayment
   ) {
-    if ("failed".equals(paystackPayment.getStatus())) {
-      out.accept(paystackPayment.getAmount() + ": failed,");
-    }
     return userPaymentsData.addToPaystackPayments(paystackPayment);
   }
 
-  private
-  void processSuccessfulCharge(
-          UserPaymentsData userPaymentsData, double chargeAmount, Consumer<String> out
+  private void processSuccessfulCharge(
+          UserPaymentsData userPaymentsData,
+          PaystackPayment paystackPayment
   ) {
-    out.accept(chargeAmount + ": charged,");
-
-    userPaymentsData.addToActuallyCharged(chargeAmount);
+    userPaymentsData.addToActuallyCharged(paystackPayment.getAmount());
   }
 
-  private
-  void putPayment(
+  private void putPayment(
           HashMap<String, UserPayments> payments,
           HashMap<String, UserPaystackPayments> paystackPayments,
           String payment
@@ -225,35 +238,53 @@ class PaymentMergeService {
     String email      = sourcePayment.getEmail();
     String paystackId = sourcePayment.getPaystackUserId();
 
-    payments.putIfAbsent(userId, new UserPayments(userId, email, paystackId, new ArrayList<>()));
-    paystackPayments.putIfAbsent(email, new UserPaystackPayments(userId, email, paystackId, new ArrayList<>()));
+    payments.putIfAbsent(
+            userId,
+            new UserPayments(
+                    userId,
+                    email,
+                    paystackId,
+                    new ArrayList<>()
+            )
+    );
+    paystackPayments.putIfAbsent(
+            email,
+            new UserPaystackPayments(
+                    userId,
+                    email,
+                    paystackId,
+                    new ArrayList<>()
+            )
+    );
 
     payments.get(userId).getList().add(sourcePayment);
-
-//                    paymentRepository.save(sourcePayment);
   }
 
-  private
-  Boolean putPaystackPayment(HashMap<String, UserPaystackPayments> paystackPayments, String payment) {
+  private Boolean putPaystackPayment(
+          HashMap<String, UserPaystackPayments> paystackPayments,
+          String payment
+  ) {
     PaystackPayment paystackPayment = PaystackPayment.parseCSVPayment(payment);
 
     String email = paystackPayment.getEmail();
 
     return Optional.ofNullable(paystackPayments.get(email))
-                   .map(userPaystackPayments -> userPaystackPayments.getList().add(paystackPayment))
+                   .map(userPaystackPayments -> userPaystackPayments.getList()
+                                                                    .add(paystackPayment))
                    .orElse(false);
   }
 
-  private
-  void readFile(SimpleFileReader paystackFileReader, Consumer<String> action) {
+  private void readFile(
+          SimpleFileReader paystackFileReader,
+          Consumer<String> action
+  ) {
     Arrays.stream(paystackFileReader.readFile()
                                     .split("\n"))
           .forEach(action);
   }
 
   @Data
-  private
-  class UserPaymentsData {
+  private class UserPaymentsData {
     StringBuffer srcPayments      = new StringBuffer().append("[ ");
     StringBuffer paystackPayments = new StringBuffer().append("[ ");
     LocalDateTime
@@ -267,8 +298,7 @@ class PaymentMergeService {
     Double totalVolume           = 0.0;
     Double totalSuccessfulVolume = 0.0;
 
-    private
-    String trimAndFinalize(StringBuffer builder) {
+    private String trimAndFinalize(StringBuffer builder) {
       return builder.length() <= 2
              ? "[ ]"
              : builder
@@ -293,12 +323,20 @@ class PaymentMergeService {
     }
 
     PaystackPayment addToPaystackPayments(PaystackPayment paystackPayment) {
-      this.paystackPayments.append(paystackPayment.toString()).append(", ");
+      this.paystackPayments.append(fullView
+                                   ? paystackPayment.toString()
+                                   : paystackPayment.toShortString()
+      ).append(", ");
+
       return paystackPayment;
     }
 
     SourcePayment addToPayments(SourcePayment sourcePayment) {
-      this.srcPayments.append(sourcePayment.toString()).append(", ");
+      this.srcPayments.append(fullView
+                              ? sourcePayment.toString()
+                              : sourcePayment.toShortString()
+      ).append(", ");
+
       return sourcePayment;
     }
 
@@ -309,8 +347,7 @@ class PaymentMergeService {
 
   @Data
   @AllArgsConstructor
-  private
-  class UserPayments {
+  private class UserPayments {
     String                    userId;
     String                    email;
     String                    paystackId;
@@ -319,16 +356,14 @@ class PaymentMergeService {
 
   @Data
   @AllArgsConstructor
-  private
-  class UserPaystackPayments {
+  private class UserPaystackPayments {
     String                      userId;
     String                      email;
     String                      paystackId;
     Collection<PaystackPayment> list;
   }
 
-  private
-  class Amounts {
+  private class Amounts {
     Double purchaseAmount           = 0.0;
     Double successfulPurchaseAmount = 0.0;
 

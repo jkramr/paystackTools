@@ -15,14 +15,20 @@ import java.util.function.Predicate;
 @Data
 @NoArgsConstructor
 @RequiredArgsConstructor
-public
-class SourcePayment {
+public class SourcePayment {
 
   public static final Predicate<SourcePayment>
-                                               UNIQUE_ROOT_PAYMENTS_PER_PURCHASE
-                                                                   = payment -> "NULL".equals(payment.getPreviousRowId());
-  public static final Predicate<SourcePayment> ACTUAL_PAYMENTS     = payment -> "capture".equals(payment.getType());
-  public static final Predicate<SourcePayment> SUCCESSFUL_PAYMENTS = payment -> "finished".equals(payment.getState());
+          UNIQUE_ROOT_PAYMENTS_PER_PURCHASE
+          = payment -> "NULL"
+          .equals(payment.getPreviousRowId());
+  public static final Predicate<SourcePayment>
+          ACTUAL_PAYMENTS
+          = payment -> "capture"
+          .equals(payment.getType());
+  public static final Predicate<SourcePayment>
+          SUCCESSFUL_PAYMENTS
+          = payment -> "finished"
+          .equals(payment.getState());
 
   @Id
   @NonNull
@@ -52,45 +58,47 @@ class SourcePayment {
   @NonNull
   private String        paystackUserId;
 
-  public static
-  SourcePayment parsePayment(String csvPayment) {
+  public static SourcePayment parsePayment(String csvPayment) {
     String[] fields = csvPayment.split(",");
 
     SourcePayment payment = new SourcePayment(
-            fields[0],
             // id
-            fields[1],
+            fields[0],
             // type
-            LocalDateTime.parse(fields[4], DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
+            fields[1],
             // created: 2017-02-22 15:02:18
-            Double.valueOf(fields[5]),
+            LocalDateTime.parse(
+                    fields[4],
+                    DateTimeFormatter.ofPattern(
+                            "yyyy-MM-dd HH:mm:ss")
+            ),
             // amount
-            fields[6],
+            Double.valueOf(fields[5]),
             // payment_id
-            fields[7],
+            fields[6],
             // user_id
-            fields[8],
+            fields[7],
             // payment_method_id
-            fields[9],
+            fields[8],
             // payment_method_type
-            fields[10],
+            fields[9],
             // state
-            fields[11],
+            fields[10],
             // email
-            Integer.valueOf(fields[12]),
+            fields[11],
             // is_auto_retry
-            fields[13],
+            Integer.valueOf(fields[12]),
             // previous_row_id
-            fields[14]
+            fields[13],
             // paystack_user_id
+            fields[14]
     );
 
     return payment;
   }
 
   @Override
-  public
-  String toString() {
+  public String toString() {
     return "{" +
            "id: " + id +
            ", type: " + type +
@@ -105,5 +113,9 @@ class SourcePayment {
            ", previousRowId: " + previousRowId +
            ", paystackUserId: " + paystackUserId +
            '}';
+  }
+
+  public String toShortString() {
+    return "" + amount;
   }
 }

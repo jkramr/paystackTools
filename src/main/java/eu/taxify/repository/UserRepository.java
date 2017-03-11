@@ -8,8 +8,7 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import java.util.Collection;
 
 @RepositoryRestResource
-public
-interface UserRepository
+public interface UserRepository
         extends JpaRepository<User, String> {
 
   Collection<User> findByResolution(@Param("resolution") String resolution);

@@ -11,18 +11,15 @@ import java.io.Reader;
  * Created by jkramr on 2/28/17.
  */
 @Getter
-public
-class SimpleFileReader {
+public class SimpleFileReader {
 
   private Reader reader;
 
-  public
-  SimpleFileReader(Reader reader) {
+  public SimpleFileReader(Reader reader) {
     this.reader = reader;
   }
 
-  public
-  String readFile() {
+  public String readFile() {
     StringBuilder  builder = new StringBuilder();
     BufferedReader reader  = null;
     try {
@@ -39,8 +36,7 @@ class SimpleFileReader {
     return builder.toString();
   }
 
-  private
-  void closeQuietly(Closeable c) {
+  private void closeQuietly(Closeable c) {
     if (c != null) {
       try {
         c.close();

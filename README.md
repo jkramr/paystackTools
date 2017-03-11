@@ -14,6 +14,8 @@ RESTful microservice, powered by Spring Boot, one-button bootstrap
 
 `-DsrcPaymentsFilePath` - path to src file with input data
 
+`-DfullView` - toggle full or compact view of user payments
+
 `-DpaystackPaymentsFilePath` - path to paystack file with input data
 
 `-DfraudLevel` - negative balance level to consider user fraudulent
@@ -25,7 +27,7 @@ Thanks to Spring HATEOAS, the service provides easy access to the state:
 **NB!** JSONView plugin for chrome is highly recommended: 
 https://chrome.google.com/webstore/detail/jsonview/chklaanhfefbnpoihckbnefhakgolnmc/related?hl=en
 
-User API will be available at `http://localhost:8080/useers` + `{?page,size,sort}`
+User API will be available at `http://localhost:8080/users` + `{?page,size,sort}`
 
 Movie search API reference will be available at `http://localhost:8080/users/search`
 
@@ -34,6 +36,8 @@ Movie search API reference will be available at `http://localhost:8080/users/sea
 - Git clone or download this, unpack
 
 ###Launch
+
+### 1)
 
 #### A
 
@@ -48,7 +52,11 @@ into `src/main/resources` folder, names of the files should be exactly like this
 
 - Go to the root of the project in terminal and run 
 
-`./gradlew bootRun -DsrcPaymentsFilePath=<path-to-src-file> -DpaystackPaymentsFilePath=<path-to-paystack-file> -DfraudLevel=3000`
+`./gradlew bootRun -DsrcPaymentsFilePath=<path-to-src-file> -DpaystackPaymentsFilePath=<path-to-paystack-file> -DfraudLevel=3000 -DfullView=false`
+
+###2)
+
+- Open `http://localhost:8080/run` in your browser
 
 ### Navigate
 
