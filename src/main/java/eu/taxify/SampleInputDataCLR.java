@@ -13,52 +13,55 @@ import java.io.FileReader;
 import java.io.InputStreamReader;
 
 @Component
-class SampleInputDataCLR implements CommandLineRunner {
+class SampleInputDataCLR
+        implements CommandLineRunner {
 
-    @Value("${srcPaymentsFilePath:null}")
-    private String srcPaymentsFilePath;
+  @Value("${srcPaymentsFilePath:null}")
+  private String              srcPaymentsFilePath;
+  @Value("${srcPaymentsFileName:payment_src.csv}")
+  private String              srcPaymentsFileName;
+  @Value("${paystackPaymentsFilePath:null}")
+  private String              paystackPaymentsFilePath;
+  @Value("${paystackPaymentsFileName:payment_paystack.csv}")
+  private String              paystackPaymentsFileName;
+  private PaymentMergeService paymentMergeService;
 
-    @Value("${srcPaymentsFileName:payment_src.csv}")
-    private String srcPaymentsFileName;
+  @Autowired
+  SampleInputDataCLR(
+          PaymentMergeService paymentMergeService
+  ) {
+    this.paymentMergeService = paymentMergeService;
+  }
 
-    @Value("${paystackPaymentsFilePath:null}")
-    private String paystackPaymentsFilePath;
+  @Override
+  public
+  void run(String... args)
+          throws Exception {
 
-    @Value("${paystackPaymentsFileName:payment_paystack.csv}")
-    private String paystackPaymentsFileName;
+    paymentMergeService.init(
+            readFile(srcPaymentsFilePath, srcPaymentsFileName),
+            readFile(paystackPaymentsFilePath, paystackPaymentsFileName)
+    );
 
-    private PaymentMergeService paymentMergeService;
+    paymentMergeService.run(System.out::println);
+  }
 
-    @Autowired
-    SampleInputDataCLR(
-            PaymentMergeService paymentMergeService
-    ) {
-        this.paymentMergeService = paymentMergeService;
+  private
+  SimpleFileReader readFile(String path, String fileName) {
+    try {
+      return new SimpleFileReader(new FileReader(new File(path)));
+    } catch (FileNotFoundException ignored) {
     }
 
-    @Override
-    public void run(String... args) throws Exception {
+    return readResource(fileName);
+  }
 
-        paymentMergeService.initMerge(
-                readFile(srcPaymentsFilePath, srcPaymentsFileName),
-                readFile(paystackPaymentsFilePath, paystackPaymentsFileName)
-        );
-    }
-
-    private SimpleFileReader readFile(String path, String fileName) {
-        try {
-            return new SimpleFileReader(new FileReader(new File(path)));
-        } catch (FileNotFoundException ignored) {
-        }
-
-        return readResource(fileName);
-    }
-
-    private SimpleFileReader readResource(String fileName) {
-        return new SimpleFileReader(
-                new InputStreamReader(this
-                        .getClass()
-                        .getClassLoader()
-                        .getResourceAsStream(fileName)));
-    }
+  private
+  SimpleFileReader readResource(String fileName) {
+    return new SimpleFileReader(
+            new InputStreamReader(this
+                                          .getClass()
+                                          .getClassLoader()
+                                          .getResourceAsStream(fileName)));
+  }
 }

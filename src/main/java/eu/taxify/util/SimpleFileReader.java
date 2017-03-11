@@ -11,37 +11,41 @@ import java.io.Reader;
  * Created by jkramr on 2/28/17.
  */
 @Getter
-public class SimpleFileReader {
+public
+class SimpleFileReader {
 
-    private Reader reader;
+  private Reader reader;
 
-    public SimpleFileReader(Reader reader) {
-        this.reader = reader;
+  public
+  SimpleFileReader(Reader reader) {
+    this.reader = reader;
+  }
+
+  public
+  String readFile() {
+    StringBuilder  builder = new StringBuilder();
+    BufferedReader reader  = null;
+    try {
+      reader = new BufferedReader(getReader());
+      String line;
+      while ((line = reader.readLine()) != null) {
+        builder.append(line).append('\n');
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    } finally {
+      closeQuietly(reader);
     }
+    return builder.toString();
+  }
 
-    public String readFile() {
-        StringBuilder builder = new StringBuilder();
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(getReader());
-            String line;
-            while ((line = reader.readLine()) != null) {
-                builder.append(line).append('\n');
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            closeQuietly(reader);
-        }
-        return builder.toString();
+  private
+  void closeQuietly(Closeable c) {
+    if (c != null) {
+      try {
+        c.close();
+      } catch (IOException ignored) {
+      }
     }
-
-    private void closeQuietly(Closeable c) {
-        if (c != null) {
-            try {
-                c.close();
-            } catch (IOException ignored) {
-            }
-        }
-    }
+  }
 }

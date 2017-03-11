@@ -37,7 +37,7 @@ Movie search API reference will be available at `http://localhost:8080/users/sea
 
 #### A
 
-- Go to the root of the project and copy secret files `payment_src.csv` and `payment_paystack.csv` 
+- Go to the root of the project and copy secret files `payment_src.csv` and `payment_paystack_test.csv` 
 into `src/main/resources` folder, names of the files should be exactly like this otherwise use path `B`
 
 - Go to the root of the project in terminal and run 
