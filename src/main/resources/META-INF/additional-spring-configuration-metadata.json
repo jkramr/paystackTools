@@ -1,0 +1,9 @@
+{
+  "properties": [
+    {
+      "name": "payments.src.file_name",
+      "type": "java.lang.String",
+      "description": "Description for payments.src.file_name."
+    }
+  ]
+}
