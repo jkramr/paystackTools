@@ -16,14 +16,7 @@ import java.io.InputStreamReader;
 class SampleInputDataCLR
         implements CommandLineRunner {
 
-  @Value("${srcPaymentsFilePath:null}")
-  private String srcPaymentsFilePath;
-  @Value("${srcPaymentsFileName:payment_src.csv}")
-  private String srcPaymentsFileName;
-  @Value("${paystackPaymentsFilePath:null}")
-  private String paystackPaymentsFilePath;
-  @Value("${paystackPaymentsFileName:payment_paystack.csv}")
-  private String paystackPaymentsFileName;
+
 
   private PaymentMergeService paymentMergeService;
 
@@ -38,25 +31,6 @@ class SampleInputDataCLR
   public void run(String... args)
           throws Exception {
 
-    paymentMergeService.init(
-            readFile(srcPaymentsFilePath, srcPaymentsFileName),
-            readFile(paystackPaymentsFilePath, paystackPaymentsFileName)
-    );
-  }
-
-  private SimpleFileReader readFile(String path, String fileName) {
-    try {
-      return new SimpleFileReader(new FileReader(new File(path)));
-    } catch (FileNotFoundException ignored) {
-    }
-
-    return readResource(fileName);
-  }
-
-  private SimpleFileReader readResource(String fileName) {
-    return new SimpleFileReader(
-            new InputStreamReader(this.getClass()
-                                      .getClassLoader()
-                                      .getResourceAsStream(fileName)));
+    paymentMergeService.init();
   }
 }

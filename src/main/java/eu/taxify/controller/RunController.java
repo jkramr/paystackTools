@@ -22,11 +22,11 @@ public class RunController {
   }
 
   @RequestMapping(value = "/run", method = RequestMethod.GET)
-  public void merge(HttpServletResponse response)
+  public void run(HttpServletResponse response)
           throws IOException {
 
     paymentMergeService.run(System.out::println);
 
-    response.sendRedirect("/users");
+    response.sendRedirect("/csv");
   }
 }

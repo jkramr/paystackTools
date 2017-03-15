@@ -4,7 +4,6 @@ import eu.taxify.model.PaystackPayment;
 import eu.taxify.model.SourcePayment;
 import eu.taxify.model.User;
 import eu.taxify.repository.UserRepository;
-import eu.taxify.util.SimpleFileReader;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,51 +12,47 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 @Component
 public class PaymentMergeService {
 
+  private final PaymentService                        paymentService;
+  private final PaystackService                       paystackService;
   @Value("${fraudLevel:5000}")
-  private Integer fraudLevel;
-
+  private       Integer                               fraudLevel;
   @Value("${fullView:true}")
-  private Boolean fullView;
-
-  private UserRepository userRepository;
-
-  private HashMap<String, UserPayments>         users;
-  private HashMap<String, UserPaystackPayments> paystackUsers;
+  private       Boolean                               fullView;
+  private       UserRepository                        userRepository;
+  private       HashMap<String, UserPayments>         users;
+  private       HashMap<String, UserPaystackPayments> paystackUsers;
 
   @Autowired
   public PaymentMergeService(
-          UserRepository userRepository
+          UserRepository userRepository,
+          PaymentService paymentService,
+          PaystackService paystackService
   ) {
     this.userRepository = userRepository;
+    this.paymentService = paymentService;
+    this.paystackService = paystackService;
   }
 
-  public void init(
-          SimpleFileReader srcFileReader,
-          SimpleFileReader paystackFileReader
-  ) {
+  public void init() {
     users = new HashMap<>();
     paystackUsers = new HashMap<>();
 
-    readFile(
-            srcFileReader,
-            payment -> putPayment(users, paystackUsers, payment)
-    );
-
-    readFile(
-            paystackFileReader,
-            payment -> putPaystackPayment(paystackUsers, payment)
-    );
+    paymentService.read(payment -> putPayment(users, paystackUsers, payment));
+    paystackService.read(payment -> putPaystackPayment(paystackUsers, payment));
   }
 
   public void run(Consumer<String> log) {
     users.forEach((id, userPayments) -> {
-      String   email      = userPayments.getEmail();
+      String email = userPayments.getEmail();
 
       UserPaystackPayments paystackPayments = paystackUsers.get(email);
 
@@ -133,6 +128,7 @@ public class PaymentMergeService {
 
     User user = new User(
             id,
+            id,
             userPayments.getEmail(),
             userPayments.getPaystackId(),
             userPaymentsData.getTotalVolume(),
@@ -140,7 +136,8 @@ public class PaymentMergeService {
             userPaymentsData.getActuallyCharged(),
             balance,
             resolution,
-            userPaymentsData.getLastPaymentTime().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+            userPaymentsData.getLastPaymentTime()
+                            .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
             userPaymentsData.stringPayments(),
             userPaymentsData.stringPaystackPayments()
     );
@@ -230,10 +227,8 @@ public class PaymentMergeService {
   private void putPayment(
           HashMap<String, UserPayments> payments,
           HashMap<String, UserPaystackPayments> paystackPayments,
-          String payment
+          SourcePayment sourcePayment
   ) {
-    SourcePayment sourcePayment = SourcePayment.parsePayment(payment);
-
     String userId     = sourcePayment.getUserId();
     String email      = sourcePayment.getEmail();
     String paystackId = sourcePayment.getPaystackUserId();
@@ -262,25 +257,15 @@ public class PaymentMergeService {
 
   private Boolean putPaystackPayment(
           HashMap<String, UserPaystackPayments> paystackPayments,
-          String payment
+          PaystackPayment paystackPayment
   ) {
-    PaystackPayment paystackPayment = PaystackPayment.parseCSVPayment(payment);
-
     String email = paystackPayment.getEmail();
 
     return Optional.ofNullable(paystackPayments.get(email))
-                   .map(userPaystackPayments -> userPaystackPayments.getList()
-                                                                    .add(paystackPayment))
+                   .map(userPaystackPayments ->
+                                userPaystackPayments.getList()
+                                                    .add(paystackPayment))
                    .orElse(false);
-  }
-
-  private void readFile(
-          SimpleFileReader paystackFileReader,
-          Consumer<String> action
-  ) {
-    Arrays.stream(paystackFileReader.readFile()
-                                    .split("\n"))
-          .forEach(action);
   }
 
   @Data

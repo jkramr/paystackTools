@@ -1,16 +1,12 @@
 package eu.taxify.util;
 
-import lombok.Getter;
+import org.springframework.stereotype.Component;
 
-import java.io.BufferedReader;
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.Reader;
+import java.io.*;
+import java.util.Arrays;
+import java.util.function.Consumer;
 
-/**
- * Created by jkramr on 2/28/17.
- */
-@Getter
+@Component
 public class SimpleFileReader {
 
   private Reader reader;
@@ -19,11 +15,35 @@ public class SimpleFileReader {
     this.reader = reader;
   }
 
+  private SimpleFileReader readFile(String path, String fileName) {
+    try {
+      return new SimpleFileReader(new FileReader(new File(path)));
+    } catch (FileNotFoundException ignored) {
+    }
+
+    return readResource(fileName);
+  }
+
+  private void readFile(
+          SimpleFileReader reader,
+          Consumer<String> action
+  ) {
+    Arrays.stream(reader.readFile().split("\n"))
+          .forEach(action);
+  }
+
+  private SimpleFileReader readResource(String fileName) {
+    return new SimpleFileReader(
+            new InputStreamReader(this.getClass()
+                                      .getClassLoader()
+                                      .getResourceAsStream(fileName)));
+  }
+
   public String readFile() {
     StringBuilder  builder = new StringBuilder();
     BufferedReader reader  = null;
     try {
-      reader = new BufferedReader(getReader());
+      reader = new BufferedReader(reader);
       String line;
       while ((line = reader.readLine()) != null) {
         builder.append(line).append('\n');

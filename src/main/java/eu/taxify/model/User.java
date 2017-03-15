@@ -20,6 +20,8 @@ public class User {
   @NonNull
   private String id;
   @NonNull
+  private String userId;
+  @NonNull
   private String email;
   @NonNull
   private String paystackId;
@@ -46,4 +48,20 @@ public class User {
   @NonNull
   private String paystackPayments;
 
+  @Override
+  public String toString() {
+    return
+           "\"" + id +
+           "\",\"" + userId +
+           "\",\"" + email +
+           "\",\"" + paystackId +
+           "\",\"" + totalVolume +
+           "\",\"" + totalSuccessfulVolume +
+           "\",\"" + actuallyCharged +
+           "\",\"" + balance +
+           "\",\"" + resolution +
+           "\",\"" + lastPaymentTime +
+           "\",\"" + payments +
+           "\",\"" + paystackPayments;
+  }
 }
