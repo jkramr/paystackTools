@@ -20,7 +20,7 @@ apply plugin: 'propdeps'
 
 jar {
     baseName = 'tools'
-    version = '0.0.1-SNAPSHOT'
+    version = '0.0.2-RELEASE'
 }
 
 sourceCompatibility = 1.8
