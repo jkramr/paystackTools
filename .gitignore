@@ -23,3 +23,12 @@ nbbuild/
 dist/
 nbdist/
 .nb-gradle/
+/src/main/resources/mysql.properties
+/src/main/resources/payment_paystack.csv.0
+/src/main/resources/payment_paystack.csv.1
+/src/main/resources/payment_paystack.csv.2
+/src/main/resources/payment_src.csv
+/src/main/resources/paystack_key_live
+/src/main/resources/paystack_key_test
+/src/main/resources/export_payments.sql
+/src/main/resources/payment_src.csv.bak

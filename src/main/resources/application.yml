@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+fraudLevel: 3000
+
+fullView: false
+
+payments:
+  src: file
+  file:
+    name: payment_src.csv
+
+
+paystack:
+  src: file
+  file:
+    name: payment_paystack.csv
+    count: 3
+
+  rest:
+    hostname: api.paystack.co
+    port: 443
+    secret_key_name: paystack_key_live

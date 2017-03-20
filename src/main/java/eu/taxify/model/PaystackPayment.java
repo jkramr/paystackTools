@@ -25,8 +25,7 @@ public class PaystackPayment {
                                ADD_CARD_FEE;
   public static final Predicate<PaystackPayment>
           SUCCESSFUL_PAYSTACK_PAYMENTS
-          = paystackPayment -> "success".equals(paystackPayment
-                                                        .getStatus());
+          = paystackPayment -> "success".equals(paystackPayment.getStatus());
 
   @Id
   @NonNull

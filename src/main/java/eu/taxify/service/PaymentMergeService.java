@@ -21,33 +21,44 @@ import java.util.function.Consumer;
 @Component
 public class PaymentMergeService {
 
-  private final PaymentService                        paymentService;
-  private final PaystackService                       paystackService;
+  private final PaymentService<SourcePayment>   paymentService;
+  private final PaymentService<PaystackPayment> paystackService;
+
   @Value("${fraudLevel:5000}")
-  private       Integer                               fraudLevel;
+  private Integer fraudLevel;
+
   @Value("${fullView:true}")
-  private       Boolean                               fullView;
-  private       UserRepository                        userRepository;
-  private       HashMap<String, UserPayments>         users;
-  private       HashMap<String, UserPaystackPayments> paystackUsers;
+  private Boolean fullView;
+
+  private UserRepository userRepository;
+
+  private HashMap<String, UserPayments>         users;
+  private HashMap<String, UserPaystackPayments> paystackUsers;
 
   @Autowired
   public PaymentMergeService(
           UserRepository userRepository,
-          PaymentService paymentService,
-          PaystackService paystackService
+          PaymentService<SourcePayment> sourcePaymentService,
+          PaymentService<PaystackPayment> paystackPaymentService
   ) {
     this.userRepository = userRepository;
-    this.paymentService = paymentService;
-    this.paystackService = paystackService;
+    this.paymentService = sourcePaymentService;
+    this.paystackService = paystackPaymentService;
   }
 
   public void init() {
     users = new HashMap<>();
     paystackUsers = new HashMap<>();
 
-    paymentService.read(payment -> putPayment(users, paystackUsers, payment));
-    paystackService.read(payment -> putPaystackPayment(paystackUsers, payment));
+    paymentService.consume(payment -> putPayment(
+            users,
+            paystackUsers,
+            payment
+    ));
+    paystackService.consume(payment -> putPaystackPayment(
+            paystackUsers,
+            payment
+    ));
   }
 
   public void run(Consumer<String> log) {
