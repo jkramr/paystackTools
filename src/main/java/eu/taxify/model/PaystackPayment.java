@@ -39,25 +39,31 @@ public class PaystackPayment {
   @NonNull
   private LocalDateTime transactionDate;
 
-  public static PaystackPayment parseCSVPayment(String csvString) {
-    String[] fields = csvString.split(",");
-
+  public static PaystackPayment parsePayment(
+          String[] fields,
+          int[] indices,
+          String status,
+          String datePattern
+  ) {
     return new PaystackPayment(
-            fields[0],
             // reference
-            fields[1],
+            fields[indices[0]],
             // email
-            Double.valueOf(fields[2]),
+            fields[indices[1]],
             // amount
-            fields[3],
+            Double.valueOf(fields[indices[2]]),
             // status
+            status != null ? status : fields[indices[3]],
+            // transaction date
             LocalDateTime.parse(
-                    fields[4],
-                    DateTimeFormatter.ofPattern(
-                            "yyyy-MM-dd HH:mm:ss")
+                    fields[indices[4]],
+                    DateTimeFormatter.ofPattern(datePattern)
             )
-            // transaction date: 2017-02-22 15:02:18
     );
+  }
+
+  public static String print(PaystackPayment paystackPayment) {
+    return paystackPayment.getAmount() + ": " + paystackPayment.getStatus();
   }
 
   @Override
@@ -73,9 +79,5 @@ public class PaystackPayment {
 
   public String toShortString() {
     return amount + ": " + status;
-  }
-
-  public static String print(PaystackPayment paystackPayment) {
-    return paystackPayment.getAmount() + ": " + paystackPayment.getStatus();
   }
 }

@@ -3,17 +3,19 @@ package eu.taxify.util;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Consumer;
 
 @Component
-public class FileSourceReader {
+public class FileReaderWriter {
 
   private SimpleFileReader getFileReader(String path, String fileName) {
     try {
       return new SimpleFileReader(new FileReader(
               new File(path)));
-    } catch (FileNotFoundException ignored) {
+    } catch (Exception ignored) {
     }
 
     return readResource(fileName);
@@ -22,19 +24,61 @@ public class FileSourceReader {
   public void readFile(
           String path,
           String fileName,
-          Consumer<String> action
+          Consumer<String[]> action,
+          boolean skipFirst
   ) {
     SimpleFileReader reader = getFileReader(path, fileName);
 
-    readFile(reader, action);
+    readFile(reader, action, skipFirst);
   }
 
   private void readFile(
           SimpleFileReader reader,
-          Consumer<String> action
+          Consumer<String[]> action,
+          boolean skipFirst
   ) {
-    Arrays.stream(reader.readFile().split("\n"))
-          .forEach(action);
+    String file = reader.readFile();
+
+    Arrays.stream(file.split("\n"))
+          .skip(skipFirst ? 1 : 0)
+          .forEach(line -> action.accept(parseCsv(line)));
+  }
+
+  private String[] parseCsv(String line) {
+    List<String> matches = new ArrayList<>();
+
+    parse(line, matches, 0);
+
+    return matches.toArray(new String[matches.size()]);
+  }
+
+  private void parse(String line, List<String> matches, int i) {
+    if (line.length() < 2 || i >= line.length() - 1) {
+      return;
+    }
+
+    int    start = i;
+    String word;
+    char   endMatcher;
+    int    hasQuote = 0;
+
+    if (line.charAt(i) == '\"') {
+      endMatcher = '\"';
+      hasQuote = 1;
+      i++;
+    } else {
+      endMatcher = ',';
+    }
+
+    while (i < line.length() - 1 && line.charAt(i) != endMatcher) {
+      i++;
+    }
+
+    word = line.substring(start + hasQuote, i);
+
+    matches.add(word);
+
+    parse(line, matches, i + 1 + hasQuote);
   }
 
   private SimpleFileReader readResource(String fileName) {
@@ -42,6 +86,13 @@ public class FileSourceReader {
             new InputStreamReader(this.getClass()
                                       .getClassLoader()
                                       .getResourceAsStream(fileName)));
+  }
+
+  static class SimpleFileWriter {
+
+    void writeFile(String path) {
+      File file = new File(path);
+    }
   }
 
   static class SimpleFileReader {

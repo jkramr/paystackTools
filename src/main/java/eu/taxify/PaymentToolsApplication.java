@@ -2,23 +2,19 @@ package eu.taxify;
 
 import eu.taxify.model.PaystackPayment;
 import eu.taxify.model.SourcePayment;
+import eu.taxify.service.PaymentService;
 import eu.taxify.service.file.FilePaystackPaymentService;
 import eu.taxify.service.file.FileSourcePaymentService;
-import eu.taxify.service.PaymentMergeService;
-import eu.taxify.service.PaymentService;
-import eu.taxify.util.FileSourceReader;
+import eu.taxify.util.FileReaderWriter;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.InjectionPoint;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.annotation.Scope;
 
 @SpringBootApplication
-@PropertySource("classpath:mysql.properties")
 public class PaymentToolsApplication {
 
   @Value("${payment.src:file}")
@@ -33,11 +29,11 @@ public class PaymentToolsApplication {
 
   @Bean
   PaymentService<PaystackPayment> paystackPaymentService(
-          FileSourceReader fileSourceReader
+          FileReaderWriter fileReaderWriter
   ) {
     switch (paystackSrc) {
       case "file":
-        return new FilePaystackPaymentService(fileSourceReader);
+        return new FilePaystackPaymentService(fileReaderWriter);
       default:
         return paymentConsumer -> { /*do nothing*/ };
     }
@@ -45,11 +41,11 @@ public class PaymentToolsApplication {
 
   @Bean
   PaymentService<SourcePayment> sourcePaymentService(
-          FileSourceReader fileSourceReader
+          FileReaderWriter fileReaderWriter
   ) {
     switch (paymentSrc) {
       case "file":
-        return new FileSourcePaymentService(fileSourceReader);
+        return new FileSourcePaymentService(fileReaderWriter);
       default:
         return paymentConsumer -> { /*do nothing*/ };
     }
@@ -61,11 +57,4 @@ public class PaymentToolsApplication {
     return Logger.getLogger(ip.getDeclaredType().getName());
   }
 
-  @Bean
-  CommandLineRunner commandLineRunner(
-          PaymentMergeService paymentMergeService
-  ) {
-
-    return args -> paymentMergeService.init();
-  }
 }

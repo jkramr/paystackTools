@@ -58,10 +58,9 @@ public class SourcePayment {
   @NonNull
   private String        paystackUserId;
 
-  public static SourcePayment parsePayment(String csvPayment) {
-    String[] fields = csvPayment.split(",");
+  public static SourcePayment parsePayment(String[] fields) {
 
-    SourcePayment payment = new SourcePayment(
+    return new SourcePayment(
             // id
             fields[0],
             // type
@@ -93,8 +92,6 @@ public class SourcePayment {
             // paystack_user_id
             fields[14]
     );
-
-    return payment;
   }
 
   @Override

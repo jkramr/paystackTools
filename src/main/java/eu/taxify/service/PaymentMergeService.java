@@ -6,6 +6,7 @@ import eu.taxify.model.User;
 import eu.taxify.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -30,6 +31,7 @@ public class PaymentMergeService {
   @Value("${fullView:true}")
   private Boolean fullView;
 
+  private Logger logger;
   private UserRepository userRepository;
 
   private HashMap<String, UserPayments>         users;
@@ -37,16 +39,18 @@ public class PaymentMergeService {
 
   @Autowired
   public PaymentMergeService(
+          Logger logger,
           UserRepository userRepository,
           PaymentService<SourcePayment> sourcePaymentService,
           PaymentService<PaystackPayment> paystackPaymentService
   ) {
+    this.logger = logger;
     this.userRepository = userRepository;
     this.paymentService = sourcePaymentService;
     this.paystackService = paystackPaymentService;
   }
 
-  public void init() {
+  public void init(Consumer<String> log) {
     users = new HashMap<>();
     paystackUsers = new HashMap<>();
 
@@ -59,9 +63,13 @@ public class PaymentMergeService {
             paystackUsers,
             payment
     ));
+
+    log.accept("Done");
   }
 
   public void run(Consumer<String> log) {
+    init(log);
+
     users.forEach((id, userPayments) -> {
       String email = userPayments.getEmail();
 
@@ -197,8 +205,9 @@ public class PaymentMergeService {
     if (amounts.successfulPurchaseAmount == 0.0) {
       amounts.successfulPurchaseAmount = payment.getAmount();
     } else {
-      purchases.add(null);
-      System.err.println("----------BROKEN STATE!----------");
+      String message = "broken state payment-paystack";
+      logger.error(message);
+      throw new IllegalStateException(message);
     }
   }
 
@@ -362,6 +371,5 @@ public class PaymentMergeService {
   private class Amounts {
     Double purchaseAmount           = 0.0;
     Double successfulPurchaseAmount = 0.0;
-
   }
 }

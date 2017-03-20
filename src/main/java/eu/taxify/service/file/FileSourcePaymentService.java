@@ -2,33 +2,38 @@ package eu.taxify.service.file;
 
 import eu.taxify.model.SourcePayment;
 import eu.taxify.service.PaymentService;
-import eu.taxify.util.FileSourceReader;
-import org.springframework.beans.factory.annotation.Autowired;
+import eu.taxify.util.FileReaderWriter;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.util.function.Consumer;
 
+import static eu.taxify.model.SourcePayment.parsePayment;
+
 public class FileSourcePaymentService
         implements PaymentService<SourcePayment> {
 
-  private final FileSourceReader fileSourceReader;
+  private final FileReaderWriter fileReaderWriter;
 
-  @Value("${payment.file.path}")
-  private String srcPaymentsFilePath;
-  @Value("${payment.file.name:payment_src.csv}")
-  private String srcPaymentsFileName;
+  @Value("${payments.file.quotes:false}")
+  private boolean quotes;
+  @Value("${payments.file.skip_first:false}")
+  private boolean skipFirst;
+  @Value("${payments.file.path:null}")
+  private String  srcPaymentsFilePath;
+  @Value("${payments.file.name:payment_src.csv}")
+  private String  srcPaymentsFileName;
 
-  @Autowired
-  public FileSourcePaymentService(FileSourceReader fileSourceReader) {
-    this.fileSourceReader = fileSourceReader;
+  public FileSourcePaymentService(FileReaderWriter fileSourceReader) {
+    this.fileReaderWriter = fileSourceReader;
   }
 
   @Override
   public void consume(Consumer<SourcePayment> paymentConsumer) {
-    fileSourceReader.readFile(
+    fileReaderWriter.readFile(
             srcPaymentsFilePath,
             srcPaymentsFileName,
-            line -> paymentConsumer.accept(SourcePayment.parsePayment(line))
+            lines -> paymentConsumer.accept(parsePayment(lines)),
+            skipFirst
     );
   }
 }

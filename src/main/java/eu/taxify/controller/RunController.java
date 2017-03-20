@@ -27,6 +27,6 @@ public class RunController {
 
     paymentMergeService.run(System.out::println);
 
-    response.sendRedirect("/csv");
+    response.sendRedirect("/users");
   }
 }
