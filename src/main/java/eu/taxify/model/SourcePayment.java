@@ -113,6 +113,10 @@ public class SourcePayment {
   }
 
   public String toShortString() {
-    return "" + amount;
+    return amount +
+           "-" +
+           state +
+           "-" +
+           isAutoRetry;
   }
 }

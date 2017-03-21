@@ -31,7 +31,7 @@ public class PaymentMergeService {
   @Value("${fullView:true}")
   private Boolean fullView;
 
-  private Logger logger;
+  private Logger         logger;
   private UserRepository userRepository;
 
   private HashMap<String, UserPayments>         users;
@@ -189,8 +189,7 @@ public class PaymentMergeService {
                 .filter(SourcePayment.SUCCESSFUL_PAYMENTS)
                 .forEach(payment -> processSuccessfulAction(
                         amounts,
-                        payment,
-                        purchases
+                        payment
                 ));
 
     userPaymentsData.addToTotal(amounts.purchaseAmount);
@@ -199,8 +198,7 @@ public class PaymentMergeService {
 
   private void processSuccessfulAction(
           Amounts amounts,
-          SourcePayment payment,
-          ArrayList<Double> purchases
+          SourcePayment payment
   ) {
     if (amounts.successfulPurchaseAmount == 0.0) {
       amounts.successfulPurchaseAmount = payment.getAmount();
@@ -290,6 +288,8 @@ public class PaymentMergeService {
 
   @Data
   private class UserPaymentsData {
+    ArrayList<Double> purchases = new ArrayList<>();
+
     StringBuffer srcPayments      = new StringBuffer().append("[ ");
     StringBuffer paystackPayments = new StringBuffer().append("[ ");
     LocalDateTime
