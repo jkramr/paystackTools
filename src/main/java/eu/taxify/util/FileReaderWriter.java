@@ -41,44 +41,8 @@ public class FileReaderWriter {
 
     Arrays.stream(file.split("\n"))
           .skip(skipFirst ? 1 : 0)
-          .forEach(line -> action.accept(parseCsv(line)));
-  }
-
-  private String[] parseCsv(String line) {
-    List<String> matches = new ArrayList<>();
-
-    parse(line, matches, 0);
-
-    return matches.toArray(new String[matches.size()]);
-  }
-
-  private void parse(String line, List<String> matches, int i) {
-    if (line.length() < 2 || i >= line.length() - 1) {
-      return;
-    }
-
-    int    start = i;
-    String word;
-    char   endMatcher;
-    int    hasQuote = 0;
-
-    if (line.charAt(i) == '\"') {
-      endMatcher = '\"';
-      hasQuote = 1;
-      i++;
-    } else {
-      endMatcher = ',';
-    }
-
-    while (i < line.length() - 1 && line.charAt(i) != endMatcher) {
-      i++;
-    }
-
-    word = line.substring(start + hasQuote, i);
-
-    matches.add(word);
-
-    parse(line, matches, i + 1 + hasQuote);
+          .map(line -> new CsvLineParser(line).parse())
+          .forEach(action);
   }
 
   private SimpleFileReader readResource(String fileName) {
@@ -86,6 +50,51 @@ public class FileReaderWriter {
             new InputStreamReader(this.getClass()
                                       .getClassLoader()
                                       .getResourceAsStream(fileName)));
+  }
+
+  public static class CsvLineParser {
+    private String line;
+
+    CsvLineParser(String line) {
+      this.line = line;
+    }
+
+    private String[] parse() {
+      List<String> matches = new ArrayList<>();
+
+      parse(matches, 0);
+
+      return matches.toArray(new String[matches.size()]);
+    }
+
+    private void parse(List<String> matches, int i) {
+      if (line.length() < 2 || i >= line.length() - 1) {
+        return;
+      }
+
+      int    start    = i;
+      String word;
+      char   endMatcher;
+      int    hasQuote = 0;
+
+      if (line.charAt(i) == '\"') {
+        endMatcher = '\"';
+        hasQuote = 1;
+        i++;
+      } else {
+        endMatcher = ',';
+      }
+
+      while (i < line.length() - 1 && line.charAt(i) != endMatcher) {
+        i++;
+      }
+
+      word = line.substring(start + hasQuote, i);
+
+      matches.add(word);
+
+      parse(matches, i + 1 + hasQuote);
+    }
   }
 
   static class SimpleFileWriter {
