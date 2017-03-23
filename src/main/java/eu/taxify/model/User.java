@@ -51,17 +51,17 @@ public class User {
   @Override
   public String toString() {
     return
-           "\"" + id +
-           "\",\"" + userId +
-           "\",\"" + email +
-           "\",\"" + paystackId +
-           "\",\"" + totalVolume +
-           "\",\"" + totalSuccessfulVolume +
-           "\",\"" + actuallyCharged +
-           "\",\"" + balance +
-           "\",\"" + resolution +
-           "\",\"" + lastPaymentTime +
-           "\",\"" + payments +
-           "\",\"" + paystackPayments + "\"";
+            "\"" + id +
+            "\",\"" + userId +
+            "\",\"" + email +
+            "\",\"" + paystackId +
+            "\",\"" + totalVolume +
+            "\",\"" + totalSuccessfulVolume +
+            "\",\"" + actuallyCharged +
+            "\",\"" + balance +
+            "\",\"" + resolution +
+            "\",\"" + lastPaymentTime +
+            "\",\"" + payments +
+            "\",\"" + paystackPayments + "\"";
   }
 }
