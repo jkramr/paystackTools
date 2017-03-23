@@ -39,12 +39,12 @@ public class User {
   private String lastPaymentTime;
 
   @Lob
-  @Column(name = "payments", length = 999999)
+  @Column(name = "payments", length = 999999) //todo
   @NonNull
   private String payments;
 
   @Lob
-  @Column(name = "paystackPayments", length = 999999)
+  @Column(name = "paystackPayments", length = 999999) //todo
   @NonNull
   private String paystackPayments;
 

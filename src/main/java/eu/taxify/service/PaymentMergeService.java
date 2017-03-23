@@ -18,6 +18,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 @Component
 public class PaymentMergeService {
@@ -94,152 +96,172 @@ public class PaymentMergeService {
   ) {
     return Optional.ofNullable(paystackPayments)
                    .map(UserPaystackPayments::getList)
-                   .map(userPaystackPayments -> processUserPurchases(
-                           id,
-                           userPayments,
-                           userPaystackPayments
-                   ))
+                   .map(processPurchasesForUser(id, userPayments))
                    .orElse(null);
   }
 
-  private User processUserPurchases(
+  private Function<Collection<PaystackPayment>, User> processPurchasesForUser(
+          String id,
+          UserPayments userPayments
+  ) {
+    return userPaystackPayments -> {
+      UserPaymentsData userPaymentsData = new UserPaymentsData();
+
+      ArrayList<Double> purchases = new ArrayList<>();
+
+      processUniquePurchases(userPayments, userPaymentsData, purchases);
+
+      reduceWithPaystackTransactions(userPaystackPayments, userPaymentsData);
+
+      Double balance = userPaymentsData.getActuallyCharged() -
+                       userPaymentsData.getTotalVolume();
+
+      String resolution = resolveByBalance(balance);
+
+      User user = populateUser(
+              id,
+              userPayments,
+              userPaymentsData,
+              balance,
+              resolution
+      );
+
+      userRepository.save(user);
+
+      return user;
+    };
+  }
+
+  private User populateUser(
           String id,
           UserPayments userPayments,
-          Collection<PaystackPayment> userPaystackPayments
+          UserPaymentsData userPaymentsData,
+          Double balance,
+          String resolution
   ) {
-    UserPaymentsData userPaymentsData = new UserPaymentsData();
+    return new User(
+                id,
+                id,
+                userPayments.getEmail(),
+                userPayments.getPaystackId(),
+                userPaymentsData.getTotalVolume(),
+                userPaymentsData.getTotalSuccessfulVolume(),
+                userPaymentsData.getActuallyCharged(),
+                balance,
+                resolution,
+                userPaymentsData.getLastPaymentTime()
+                                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                userPaymentsData.stringPayments(),
+                userPaymentsData.stringPaystackPayments()
+        );
+  }
 
-    ArrayList<Double> purchases = new ArrayList<>();
+  private String resolveByBalance(Double balance) {
+    return balance == 0
+                            ? "ok"
+                            : balance > 0
+                              ? "overcharge"
+                              : balance > -fraudLevel
+                                ? "undercharge"
+                                : "fraud";
+  }
 
-    userPayments.getList()
-                .stream()
-                .filter(SourcePayment.UNIQUE_ROOT_PAYMENTS_PER_PURCHASE)
-                .forEach(purchase -> processPurchaseActions(
-                        userPaymentsData,
-                        userPayments,
-                        purchase,
-                        purchases
-                ));
-
+  private void reduceWithPaystackTransactions(
+          Collection<PaystackPayment> userPaystackPayments,
+          UserPaymentsData userPaymentsData
+  ) {
     userPaystackPayments
             .stream()
             .filter(PaystackPayment.PURCHASE_PAYSTACK_PAYMENTS)
-            .map(paystackPayment -> processCharge(
-                    userPaymentsData,
-                    paystackPayment
-            ))
+            .map(processPaystackTransaction(userPaymentsData))
             .filter(PaystackPayment.SUCCESSFUL_PAYSTACK_PAYMENTS)
-            .forEach(paystackPayment -> processSuccessfulCharge(
-                    userPaymentsData,
-                    paystackPayment
-            ));
-
-    Double balance = userPaymentsData.getActuallyCharged() -
-                     userPaymentsData.getTotalVolume();
-
-    String resolution = balance == 0
-                        ? "ok"
-                        : balance > 0
-                          ? "overcharge"
-                          : balance > -fraudLevel
-                            ? "undercharge"
-                            : "fraud";
-
-    User user = new User(
-            id,
-            id,
-            userPayments.getEmail(),
-            userPayments.getPaystackId(),
-            userPaymentsData.getTotalVolume(),
-            userPaymentsData.getTotalSuccessfulVolume(),
-            userPaymentsData.getActuallyCharged(),
-            balance,
-            resolution,
-            userPaymentsData.getLastPaymentTime()
-                            .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-            userPaymentsData.stringPayments(),
-            userPaymentsData.stringPaystackPayments()
-    );
-
-    userRepository.save(user);
-
-    return user;
+            .forEach(processSuccessfulPaystackTransaction(userPaymentsData));
   }
 
-  private void processPurchaseActions(
-          UserPaymentsData userPaymentsData,
+  private void processUniquePurchases(
           UserPayments userPayments,
-          SourcePayment purchaseRow,
+          UserPaymentsData userPaymentsData,
           ArrayList<Double> purchases
   ) {
-    Amounts amounts = new Amounts();
-
     userPayments.getList()
                 .stream()
-                // filter children of this purchase
-                .filter(payment -> purchaseRow.getId()
-                                              .equals(payment.getPreviousRowId()))
-                .filter(SourcePayment.ACTUAL_PAYMENTS)
-                .map(payment -> processAction(
+                .filter(SourcePayment.UNIQUE_ROOT_PAYMENTS_PER_PURCHASE)
+                .forEach(processPaymentsForPurchase(
+                        userPayments,
                         userPaymentsData,
-                        amounts,
-                        payment,
                         purchases
-                ))
-                .filter(SourcePayment.SUCCESSFUL_PAYMENTS)
-                .forEach(payment -> processSuccessfulAction(
-                        amounts,
-                        payment
                 ));
-
-    userPaymentsData.addToTotal(amounts.purchaseAmount);
-    userPaymentsData.addToSuccessfulTotal(amounts.successfulPurchaseAmount);
   }
 
-  private void processSuccessfulAction(
-          Amounts amounts,
-          SourcePayment payment
+  private Consumer<PaystackPayment> processSuccessfulPaystackTransaction(
+          UserPaymentsData userPaymentsData
   ) {
-    if (amounts.successfulPurchaseAmount == 0.0) {
-      amounts.successfulPurchaseAmount = payment.getAmount();
-    } else {
-      String message = "broken state payment-paystack";
-      logger.error(message);
-      throw new IllegalStateException(message);
-    }
+    return paystackPayment -> userPaymentsData.addToActuallyCharged(
+            paystackPayment.getAmount());
   }
 
-  private SourcePayment processAction(
+  private Function<PaystackPayment, PaystackPayment> processPaystackTransaction(
+          UserPaymentsData userPaymentsData
+  ) {
+    return userPaymentsData::addToPaystackPayments;
+  }
+
+  private Consumer<SourcePayment> processPaymentsForPurchase(
+          UserPayments userPayments,
           UserPaymentsData userPaymentsData,
-          Amounts amounts,
-          SourcePayment sourcePayment,
           ArrayList<Double> purchases
   ) {
-    if (sourcePayment.getCreated()
-                     .isAfter(userPaymentsData.getLastPaymentTime())) {
-      userPaymentsData.setLastPaymentTime(sourcePayment.getCreated());
-    }
+    return purchase -> {
+      Amounts amounts = new Amounts();
 
-    if (amounts.purchaseAmount == 0.0) {
-      purchases.add(sourcePayment.getAmount());
-      amounts.purchaseAmount = sourcePayment.getAmount();
-    }
+      userPayments.getList()
+                  .stream()
+                  .filter(isAChildPayment(purchase))
+                  .filter(SourcePayment.ACTUAL_PAYMENTS)
+                  .map(processPayment(userPaymentsData, purchases, amounts))
+                  .filter(SourcePayment.SUCCESSFUL_PAYMENTS)
+                  .forEach(processSuccessfulPayment(amounts));
 
-    return userPaymentsData.addToPayments(sourcePayment);
+      userPaymentsData.addToTotal(amounts.purchaseAmount);
+      userPaymentsData.addToSuccessfulTotal(amounts.successfulPurchaseAmount);
+    };
   }
 
-  private PaystackPayment processCharge(
-          UserPaymentsData userPaymentsData,
-          PaystackPayment paystackPayment
-  ) {
-    return userPaymentsData.addToPaystackPayments(paystackPayment);
+  private Consumer<SourcePayment> processSuccessfulPayment(Amounts amounts) {
+    return payment -> {
+      if (amounts.successfulPurchaseAmount == 0.0) {
+        amounts.successfulPurchaseAmount = payment.getAmount();
+      } else {
+        String message = "broken state payment-paystack";
+        logger.error(message);
+        throw new IllegalStateException(message);
+      }
+    };
   }
 
-  private void processSuccessfulCharge(
+  private Function<SourcePayment, SourcePayment> processPayment(
           UserPaymentsData userPaymentsData,
-          PaystackPayment paystackPayment
+          ArrayList<Double> purchases,
+          Amounts amounts
   ) {
-    userPaymentsData.addToActuallyCharged(paystackPayment.getAmount());
+    return payment -> {
+      if (payment.getCreated()
+                 .isAfter(userPaymentsData.getLastPaymentTime())) {
+        userPaymentsData.setLastPaymentTime(payment.getCreated());
+      }
+
+      if (amounts.purchaseAmount == 0.0) {
+        purchases.add(payment.getAmount());
+        amounts.purchaseAmount = payment.getAmount();
+      }
+
+      return userPaymentsData.addToPayments(payment);
+    };
+  }
+
+  private Predicate<SourcePayment> isAChildPayment(SourcePayment purchaseRow) {
+    return payment -> purchaseRow.getId()
+                                 .equals(payment.getPreviousRowId());
   }
 
   private void putPayment(
