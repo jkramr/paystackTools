@@ -33,4 +33,7 @@ nbdist/
 /src/main/resources/paystack_key_live
 /src/main/resources/paystack_key_test
 /src/main/resources/payment_src.csv.bak
-/src/main/resources/paystack_fraud_output.csv
+/src/main/resources/payment_paystack.csv.success_2017032027
+/src/main/resources/paystack_fraud_output_2017031020.csv
+/src/main/resources/paystack_fraud_output_2017032027.csv
+/src/main/resources/payment_paystack.csv.failed_2017032027

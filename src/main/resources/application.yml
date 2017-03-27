@@ -22,7 +22,7 @@ paystack:
       prefix: payment_paystack.csv.
       date_pattern: MMM dd, yyyy h:mm:ss a
       fields: 0,2,3,-1,1
-      suffices: _2017031020
+      suffices: _2017031020, _2017032027
   rest:
     hostname: api.paystack.co
     port: 443
