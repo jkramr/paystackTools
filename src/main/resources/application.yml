@@ -8,7 +8,7 @@ fullView: false
 payments:
   src: file
   file:
-    skip_first: false
+    skip_first: true
     name: payment_src.csv
 
 paystack:

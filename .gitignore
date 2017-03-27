@@ -26,14 +26,15 @@ nbdist/
 /src/main/resources/mysql.properties
 
 ### Secret files ###
+/src/main/resources/payment_src.csv
+/src/main/resources/payment_src.csv.bak.0
+/src/main/resources/payment_src.csv.bak.1
+/src/main/resources/paystack_key_live
+/src/main/resources/paystack_key_test
 /src/main/resources/payment_paystack.csv
 /src/main/resources/payment_paystack.csv.success_2017031020
 /src/main/resources/payment_paystack.csv.failed_2017031020
-/src/main/resources/payment_src.csv
-/src/main/resources/paystack_key_live
-/src/main/resources/paystack_key_test
-/src/main/resources/payment_src.csv.bak
 /src/main/resources/payment_paystack.csv.success_2017032027
+/src/main/resources/payment_paystack.csv.failed_2017032027
 /src/main/resources/paystack_fraud_output_2017031020.csv
 /src/main/resources/paystack_fraud_output_2017032027.csv
-/src/main/resources/payment_paystack.csv.failed_2017032027
