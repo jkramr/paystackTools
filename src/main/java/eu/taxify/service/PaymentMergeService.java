@@ -140,30 +140,30 @@ public class PaymentMergeService {
           String resolution
   ) {
     return new User(
-                id,
-                id,
-                userPayments.getEmail(),
-                userPayments.getPaystackId(),
-                userPaymentsData.getTotalVolume(),
-                userPaymentsData.getTotalSuccessfulVolume(),
-                userPaymentsData.getActuallyCharged(),
-                balance,
-                resolution,
-                userPaymentsData.getLastPaymentTime()
-                                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-                userPaymentsData.stringPayments(),
-                userPaymentsData.stringPaystackPayments()
-        );
+            id,
+            id,
+            userPayments.getEmail(),
+            userPayments.getPaystackId(),
+            userPaymentsData.getTotalVolume(),
+            userPaymentsData.getTotalSuccessfulVolume(),
+            userPaymentsData.getActuallyCharged(),
+            balance,
+            resolution,
+            userPaymentsData.getLastPaymentTime()
+                            .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+            userPaymentsData.stringPayments(),
+            userPaymentsData.stringPaystackPayments()
+    );
   }
 
   private String resolveByBalance(Double balance) {
     return balance == 0
-                            ? "ok"
-                            : balance > 0
-                              ? "overcharge"
-                              : balance > -fraudLevel
-                                ? "undercharge"
-                                : "fraud";
+           ? "ok"
+           : balance > 0
+             ? "overcharge"
+             : balance > -fraudLevel
+               ? "undercharge"
+               : "fraud";
   }
 
   private void reduceWithPaystackTransactions(

@@ -14,9 +14,9 @@ SELECT
   r.is_auto_retry,
   r.previous_row_id,
   u.value
-FROM `payment` as p
-  JOIN `payment_row` as r ON (r.payment_id = p.id)
-  JOIN `user_metadata` as u ON (p.user_id = u.user_id)
-  JOIN `user` as s ON (p.user_id = s.id)
-WHERE p.payment_method_type='paystack'
+FROM `payment` AS p
+  JOIN `payment_row` AS r ON (r.payment_id = p.id)
+  JOIN `user_metadata` AS u ON (p.user_id = u.user_id)
+  JOIN `user` AS s ON (p.user_id = s.id)
+WHERE p.payment_method_type = 'paystack'
 ORDER BY p.created DESC;
